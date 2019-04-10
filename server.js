@@ -8,16 +8,16 @@ const port = process.env.PORT || 8080;
 
 const baseUrl = 'https://sebprunier.mycozy.cloud'
 const redirectUri = 'http://127.0.0.1:8080/oauth/callback';
-const scope = 'io.cozy.apps:GET';
+const scope = 'io.cozy.triggers:GET io.cozy.jobs:GET';
 const state = '123456';
-const clientId = "";
-const clientSecret = "";
+const clientId = "747c208885084be978dcf3fdfb78be79";
+const clientSecret = "u7xfy7hXEGeVDruQx9Jak7PAozsWLNQQ";
 
 let token = null;
 let refreshToken = null;
 
 function handleNoToken(req, res) {
-  res.status(302).set('Location', `${baseUrl}/auth/login?state=${state}&scope=${scope}&client_id=${clientId}&response_type=code&redirect_uri=${redirectUri}`).send('');
+  res.status(302).set('Location', `${baseUrl}/auth/authorize?state=${state}&scope=${scope}&client_id=${clientId}&response_type=code&redirect_uri=${redirectUri}&csrf_token=${state}`).send('');
 }
 
 app.use(bodyParser.json());
@@ -43,6 +43,8 @@ app.get('/', (req, res) => {
 });
 
 app.get('/oauth/callback', (req, res) => {
+  console.log(req.query)
+  console.log(req.headers)
   const code = req.query.code;
   fetch(`${baseUrl}/auth/authorize`, {
     method: 'POST',
@@ -50,8 +52,9 @@ app.get('/oauth/callback', (req, res) => {
       'Content-Type': 'application/x-www-form-urlencoded',
       'Accept': 'application/json',
     },
-    body: `state=${state}&code=${code}&grant_type=authorization_code&client_id=${clientId}&client_secret=${clientSecret}&redirect_uri=${redirectUri}&csrf_token=123456`
+    body: `state=${state}&code=${code}&grant_type=authorization_code&client_id=${clientId}&client_secret=${clientSecret}&redirect_uri=${redirectUri}&csrf_token=${state}`
   }).then(r => r.json()).then(resp => {
+    console.log(resp)
     token = resp.access_token;
     refreshToken= resp.refresh_token;
     res.status(302).set('Location', `/`).send('');

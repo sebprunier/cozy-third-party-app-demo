@@ -21,8 +21,8 @@ let clientConfig = null;
 function registerOrLoadClient() {
   try {
     const tokens = JSON.parse(fs.readFileSync('./tokens.json').toString('utf8'));
-    accessToken = tokens.access_token;
-    refreshToken = tokens.refresh_token;
+    accessToken = tokens.accessToken;
+    refreshToken = tokens.refreshToken;
   } catch(e) {
     console.log('No tokens file found.')
   }
@@ -111,7 +111,6 @@ function handleNoToken(req, res) {
 }
 
 app.get('/', (req, res) => {
-  console.log(`Bearer ${accessToken}`)
   withOAuthToken(req, res, callFailed => {
     fetch(`${baseUrl}/konnectors/`, {
       method: 'GET',
@@ -125,8 +124,8 @@ app.get('/', (req, res) => {
       if (r.status == 200) {
         r.json().then(json => {
           console.log(json)
-          const html = JSON.stringify(json)
-          res.type('html').send(html)
+          const html = JSON.stringify(json, null, 2)
+          res.type('html').send(`<pre>${html}</pre>`)
         });
       } if (r.status === 401 || r.status === 403) {
         r.text().then(text => {

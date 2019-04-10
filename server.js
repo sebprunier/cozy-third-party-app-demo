@@ -42,7 +42,7 @@ app.get('/', (req, res) => {
   }
 });
 
-app.get('/oauth/token', (req, res) => {
+app.get('/oauth/callback', (req, res) => {
   const code = req.query.code;
   fetch(`${baseUrl}/auth/authorize`, {
     method: 'POST',

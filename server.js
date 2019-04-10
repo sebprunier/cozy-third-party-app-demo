@@ -21,8 +21,17 @@ app.get('/', (req, res) => {
   if (!token) {
     handleNoToken(req, res);
   } else {
-    fetch(`${baseUrl}/konnectors/`)
-    res.type('html').send("<h1>Hello</h>")
+    fetch(`${baseUrl}/konnectors/`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer: ${token}`,
+        'Accept': 'application/vnd.api+json'
+      }
+    })
+    .then(r => r.json())
+    .then(json => {
+      res.type('html').send(json.stringify())
+    })
   }
 });
 

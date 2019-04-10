@@ -6,6 +6,8 @@ const fetch = require('node-fetch');
 const app = express();
 const port = process.env.PORT || 8080;
 
+const baseUrl = 'https://sebprunier.cozy.cloud'
+
 let token = null;
 
 
@@ -19,6 +21,7 @@ app.get('/', (req, res) => {
   if (!token) {
     handleNoToken(req, res);
   } else {
+    fetch(`${baseUrl}/konnectors/`)
     res.type('html').send("<h1>Hello</h>")
   }
 });

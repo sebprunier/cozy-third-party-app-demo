@@ -12,28 +12,31 @@ const redirectUri = 'http://127.0.0.1:8080/oauth/callback';
 const scope = 'io.cozy.triggers:GET io.cozy.jobs:GET';
 const state = '123456';
 
+////////////////////////////////////////////////////////////////////////////////////////
+
 let accessToken = null;
 let refreshToken = null;
 let clientConfig = null;
 
-function token() {
-  if (accessToken) {
-    const pl = JSON.parse(accessToken.split('.')[1]);
-    console.log('accessToken', pl);
-    return Promise.resolve(accessToken); // TODO: remove
-    if (pl.exp < Date.now()) {
-      return refreshAccessToken().then(() => accessToken);
-    } else {
-      return Promise.resolve(accessToken);
-    }
-  } else {
-    return Promise.resolve(null);
-  }
-}
-
-function handleNoToken(req, res) {
-  res.status(302).set('Location', `${baseUrl}/auth/authorize?state=${state}&scope=${scope}&client_id=${clientConfig.clientId}&response_type=code&redirect_uri=${redirectUri}&csrf_token=${state}`).send('');
-}
+// function base64decode(str) {
+//   return new Buffer(str, 'base64').toString('ascii');
+// }
+// 
+// function token() {
+//   if (accessToken) {
+//     console.log('accessToken1', accessToken);
+//     const pl = JSON.parse(base64decode(accessToken.split('.')[1]));
+//     console.log('accessToken2', pl);
+//     return Promise.resolve(accessToken); // TODO: remove
+//     if (pl.exp < Date.now()) {
+//       return refreshAccessToken().then(() => accessToken);
+//     } else {
+//       return Promise.resolve(accessToken);
+//     }
+//   } else {
+//     return Promise.resolve(null);
+//   }
+// }
 
 function registerOrLoadClient() {
   try {
@@ -61,59 +64,103 @@ function registerOrLoadClient() {
 }
 
 function refreshAccessToken() {
+  console.log('refreshAccessToken');
   return fetch(`${baseUrl}/auth/access_token`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/x-www-form-urlencoded',
       'Accept': 'application/json',
     },
-    body: `state=${state}&refresh_token=${refreshToken}&grant_type=refresh_token&client_id=${clientConfig.clientId}&client_secret=${clientConfig.clientSecret}&redirect_uri=${redirectUri}&csrf_token=${state}`
+    body: `state=${state}&refresh_token=${refreshToken}&grant_type=refresh_token&client_id=${clientConfig.client_id}&client_secret=${clientConfig.client_secret}&redirect_uri=${redirectUri}&csrf_token=${state}`
   }).then(r => r.json()).then(resp => {
-    console.log('refreshAccessToken', resp)
+    console.log('refreshAccessToken resp', resp)
     accessToken = resp.access_token;
-    refreshToken= resp.refresh_token;
+    fs.writeFileSync('./tokens.json', JSON.stringify({
+      accessToken,
+      refreshToken
+    }, null, 2))
   });
 }
 
-app.use(bodyParser.json());
-
-app.get('/', (req, res) => {
-  return token().then(tok => {
-    if (!tok) {
-      handleNoToken(req, res);
-    } else {
-      fetch(`${baseUrl}/api/jobs/`, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer: ${tok}`,
-          'Accept': 'application/vnd.api+json'
-        }
-      })
-      .then(r => r.json())
-      .then(json => {
-        console.log(json)
-        const html = JSON.stringify(json)
-        res.type('html').send(html)
-      })
-    }
-  });
-});
-
-app.get('/oauth/callback', (req, res) => {
-  console.log(req.query)
-  console.log(req.headers)
-  const code = req.query.code;
-  fetch(`${baseUrl}/auth/access_token`, {
+function fetchAccessToken(code) {
+  console.log('fetchAccessToken');
+  return fetch(`${baseUrl}/auth/access_token`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/x-www-form-urlencoded',
       'Accept': 'application/json',
     },
-    body: `state=${state}&code=${code}&grant_type=authorization_code&client_id=${clientConfig.clientId}&client_secret=${clientConfig.clientSecret}&redirect_uri=${redirectUri}`
+    body: `state=${state}&code=${code}&grant_type=authorization_code&client_id=${clientConfig.client_id}&client_secret=${clientConfig.client_secret}&redirect_uri=${redirectUri}`
   }).then(r => r.json()).then(resp => {
-    console.log(resp)
+    console.log('fetchAccessToken resp', resp)
     accessToken = resp.access_token;
-    refreshToken= resp.refresh_token;
+    refreshToken = resp.refresh_token;
+    fs.writeFileSync('./tokens.json', JSON.stringify({
+      accessToken,
+      refreshToken
+    }, null, 2))
+  });
+}
+
+function withOAuthToken(req, res, f) {
+  if (accessToken) {
+    const callFailed = () => {
+      return refreshAccessToken().then(() => {
+        f(callFailed);
+      });
+    };
+    f(callFailed);
+  } else {
+    return handleNoToken(req, res);
+  }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////
+
+app.use(bodyParser.json());
+
+function handleNoToken(req, res) {
+  res.status(302).set('Location', `${baseUrl}/auth/authorize?state=${state}&scope=${scope}&client_id=${clientConfig.client_id}&response_type=code&redirect_uri=${redirectUri}&csrf_token=${state}`).send('');
+}
+
+app.get('/', (req, res) => {
+  console.log(`Bearer ${accessToken}`)
+  withOAuthToken(req, res, callFailed => {
+    fetch(`${baseUrl}/konnectors/`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        'Accept': 'application/vnd.api+json'
+      }
+    })
+    .then(r => {
+      console.log('status', r.status);
+      if (r.status == 200) {
+        r.json().then(json => {
+          console.log(json)
+          const html = JSON.stringify(json)
+          res.type('html').send(html)
+        });
+      } if (r.status === 401 || r.status === 403) {
+        r.text().then(text => {
+          console.log('failed because', text)
+        });
+        callFailed();
+      } else {
+        r.text().then(text => {
+          res.type('json').send({
+            status: r.status,
+            text: text
+          })
+        });
+      }
+    })
+  })
+});
+
+app.get('/oauth/callback', (req, res) => {
+  const code = req.query.code;
+  fetchAccessToken(code).then(() => {
     res.status(302).set('Location', `/`).send('');
   });
 });

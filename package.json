@@ -10,5 +10,11 @@
     "moment": "^2.24.0",
     "node-fetch": "^2.3.0",
     "nodemon": "^1.18.11"
+  },
+  "nodemonConfig": {
+    "ignore": [
+      "client.json",
+      "tokens.json"
+    ]
   }
 }

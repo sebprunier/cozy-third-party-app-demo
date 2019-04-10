@@ -6,7 +6,7 @@ const fetch = require('node-fetch');
 const app = express();
 const port = process.env.PORT || 8080;
 
-const baseUrl = 'https://sebprunier.cozy.cloud'
+const baseUrl = 'https://sebprunier.mycozy.cloud'
 
 let token = null;
 

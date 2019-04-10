@@ -9,7 +9,7 @@ const port = process.env.PORT || 8080;
 
 const baseUrl = process.env.COZY_BASE_URL || 'https://sebprunier.mycozy.cloud';
 const redirectUri = 'http://127.0.0.1:8080/oauth/callback';
-const scope = 'io.cozy.triggers:GET io.cozy.jobs:GET';
+const scope = 'io.cozy.konnectors';
 const state = '123456';
 
 ////////////////////////////////////////////////////////////////////////////////////////

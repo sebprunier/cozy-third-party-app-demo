@@ -18,27 +18,14 @@ let accessToken = null;
 let refreshToken = null;
 let clientConfig = null;
 
-// function base64decode(str) {
-//   return new Buffer(str, 'base64').toString('ascii');
-// }
-// 
-// function token() {
-//   if (accessToken) {
-//     console.log('accessToken1', accessToken);
-//     const pl = JSON.parse(base64decode(accessToken.split('.')[1]));
-//     console.log('accessToken2', pl);
-//     return Promise.resolve(accessToken); // TODO: remove
-//     if (pl.exp < Date.now()) {
-//       return refreshAccessToken().then(() => accessToken);
-//     } else {
-//       return Promise.resolve(accessToken);
-//     }
-//   } else {
-//     return Promise.resolve(null);
-//   }
-// }
-
 function registerOrLoadClient() {
+  try {
+    const tokens = JSON.parse(fs.readFileSync('./tokens.json').toString('utf8'));
+    accessToken = tokens.access_token;
+    refreshToken = tokens.refresh_token;
+  } catch(e) {
+    console.log('No tokens file found.')
+  }
   try {
     clientConfig = JSON.parse(fs.readFileSync('./client.json').toString('utf8'));
     console.log('Loaded client config !');

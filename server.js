@@ -10,6 +10,8 @@ const baseUrl = 'https://sebprunier.mycozy.cloud'
 const redirectUri = 'http://127.0.0.1:8080/oauth/callback';
 const scope = 'io.cozy.apps:GET';
 const state = '123456';
+const clientId = "";
+const clientSecret = "";
 
 let token = null;
 let refreshToken = null;

@@ -6,12 +6,41 @@ const fetch = require('node-fetch');
 const { OAuthHandler } = require('./oauth');
 
 const port = process.env.PORT || 8080;
-const resource = process.env.COZY_RESOURCE || 'konnectors';
 const baseUrl = process.env.COZY_BASE_URL || 'https://sebprunier.mycozy.cloud';
 const oauthHandler = new OAuthHandler(baseUrl, `io.cozy.konnectors io.cozy.events io.cozy.files`);
 
 const app = express();
 app.use(bodyParser.json());
+
+function downloadFile(doc, req, res) {
+  return oauthHandler.withOAuthToken(req, res, (accessToken, callFailed, callPassed) => {
+    fetch(`${baseUrl}/files/download/${doc._id}`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+      }
+    })
+    .then(r => {
+      if (r.status == 200) {
+        callPassed();
+        return r.buffer().then(b => res.type(doc.mime).send(b));
+      } if (r.status === 401 || r.status === 403) {
+        callFailed();
+        return r.text().then(text => {
+          console.log('failed because', text)
+        });
+      } else {
+        callPassed();
+        return res.type('json').send({
+          status: r.status,
+          error: 'error'
+        });
+      }
+    }).catch(e => {
+      console.log('error while downloadFile', e)
+    });
+  });
+}
 
 function fetchAllFiles(req, res) {
   return oauthHandler.withOAuthToken(req, res, (accessToken, callFailed, callPassed) => {
@@ -26,8 +55,15 @@ function fetchAllFiles(req, res) {
       if (r.status == 200) {
         callPassed();
         return r.json().then(json => {
-          const html = JSON.stringify(json, null, 2)
-          res.type('html').send(`<pre>${html}</pre>`)
+          const html = `<html>
+              <body>
+                <h1>Files</h1>
+                <ul>
+                  ${json.rows.filter(r => r.doc.type === 'file').map(r => `<li><a href="/files/${r.doc._id}?mime=${r.doc.mime}">${r.doc.name}</a></li>`).join('\n')}
+                </ul>
+              </body>
+            </html>`;
+          res.type('html').send(html);
         });
       } if (r.status === 401 || r.status === 403) {
         callFailed();
@@ -44,7 +80,7 @@ function fetchAllFiles(req, res) {
         });
       }
     }).catch(e => {
-      console.log('error while main func', e)
+      console.log('error while fetchAllFiles', e)
     });
   });
 }
@@ -80,7 +116,7 @@ function fetchKonnectors(req, res) {
         });
       }
     }).catch(e => {
-      console.log('error while main func', e)
+      console.log('error while fetchKonnectors', e)
     });
   });
 }
@@ -88,6 +124,12 @@ function fetchKonnectors(req, res) {
 app.get('/', (req, res) => {
   fetchAllFiles(req, res);
   // fetchKonnectors(req, res);
+});
+
+app.get('/files/:id', (req, res) => {
+  const _id = req.params.id;
+  const mime = req.query.mime;
+  downloadFile({ _id, mime }, req, res);
 });
 
 app.get('/oauth/callback', (req, res) => {

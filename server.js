@@ -2,14 +2,15 @@ const _ = require('lodash');
 const express = require('express');
 const bodyParser = require('body-parser');
 const fetch = require('node-fetch');
+
 const { OAuthHandler } = require('./oauth');
 
-const app = express();
 const port = process.env.PORT || 8080;
 const resource = process.env.COZY_RESOURCE || 'konnectors';
 const baseUrl = process.env.COZY_BASE_URL || 'https://sebprunier.mycozy.cloud';
 const oauthHandler = new OAuthHandler(baseUrl, resource);
 
+const app = express();
 app.use(bodyParser.json());
 
 app.get('/', (req, res) => {

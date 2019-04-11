@@ -16,9 +16,19 @@ class OAuthHandler {
     this.refresh = false;
   }
 
+  writeTokens() {
+    const allTokens = JSON.parse(fs.readFileSync('./tokens.json').toString('utf8'));
+    allTokens[this.scope] = {
+      accessToken: this.accessToken,
+      refreshToken: this.refreshToken
+    };
+    fs.writeFileSync('./tokens.json', JSON.stringify(allTokens, null, 2))
+  }
+
   registerOrLoadClient() {
     try {
-      const tokens = JSON.parse(fs.readFileSync('./tokens.json').toString('utf8'));
+      const allTokens = JSON.parse(fs.readFileSync('./tokens.json').toString('utf8'));
+      const tokens = allTokens[this.scope] || {};
       this.accessToken = tokens.accessToken;
       this.refreshToken = tokens.refreshToken;
     } catch(e) {
@@ -60,10 +70,7 @@ class OAuthHandler {
     }).then(r => r.json()).then(resp => {
       console.log('refreshAccessToken resp', resp)
       this.accessToken = resp.access_token;
-      fs.writeFileSync('./tokens.json', JSON.stringify({
-        accessToken: this.accessToken,
-        refreshToken: this.refreshToken
-      }, null, 2))
+      this.writeTokens();
     }).catch(e => {
       console.log('error while refreshAccessToken', e)
     });
@@ -82,10 +89,7 @@ class OAuthHandler {
       console.log('fetchAccessToken resp', resp)
       this.accessToken = resp.access_token;
       this.refreshToken = resp.refresh_token;
-      fs.writeFileSync('./tokens.json', JSON.stringify({
-        accessToken: this.accessToken,
-        refreshToken: this.refreshToken
-      }, null, 2))
+      this.writeTokens();
     }).catch(e => {
       console.log('error while fetchAccessToken', e)
     });

@@ -7,7 +7,7 @@ const { OAuthHandler } = require('./oauth');
 
 const port = process.env.PORT || 8080;
 const baseUrl = process.env.COZY_BASE_URL || 'https://sebprunier.mycozy.cloud';
-const oauthHandler = new OAuthHandler(baseUrl, `io.cozy.konnectors io.cozy.events io.cozy.files`);
+const oauthHandler = new OAuthHandler(baseUrl, `io.cozy.konnectors:GET io.cozy.events:GET io.cozy.files:GET`);
 
 const app = express();
 app.use(bodyParser.json());

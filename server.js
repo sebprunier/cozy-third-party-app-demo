@@ -8,7 +8,6 @@ const app = express();
 const port = process.env.PORT || 8080;
 
 const baseUrl = process.env.COZY_BASE_URL || 'https://sebprunier.mycozy.cloud';
-
 const oauthHandler = new OAuthHandler(baseUrl);
 
 app.use(bodyParser.json());

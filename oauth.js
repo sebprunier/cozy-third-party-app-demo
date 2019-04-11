@@ -2,13 +2,14 @@ const fetch = require('node-fetch');
 const fs = require('fs');
 
 const redirectUri = 'http://127.0.0.1:8080/oauth/callback';
-const scope = 'io.cozy.konnectors';
 const state = '123456';
 
 class OAuthHandler {
 
-  constructor(baseUrl) {
+  constructor(baseUrl, resource) {
     this.baseUrl = baseUrl;
+    this.resource = resource;
+    this.scope = `io.cozy.${resource}`;
     this.accessToken = null;
     this.refreshToken = null;
     this.clientConfig = null;
@@ -114,7 +115,7 @@ class OAuthHandler {
   }
 
   handleNoToken(req, res) {
-    res.status(302).set('Location', `${this.baseUrl}/auth/authorize?state=${state}&scope=${scope}&client_id=${this.clientConfig.client_id}&response_type=code&redirect_uri=${redirectUri}&csrf_token=${state}`).send('');
+    res.status(302).set('Location', `${this.baseUrl}/auth/authorize?state=${state}&scope=${this.scope}&client_id=${this.clientConfig.client_id}&response_type=code&redirect_uri=${redirectUri}&csrf_token=${state}`).send('');
   }
 }
 

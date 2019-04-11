@@ -6,15 +6,15 @@ const { OAuthHandler } = require('./oauth');
 
 const app = express();
 const port = process.env.PORT || 8080;
-
+const resource = process.env.COZY_RESOURCE || 'konnectors';
 const baseUrl = process.env.COZY_BASE_URL || 'https://sebprunier.mycozy.cloud';
-const oauthHandler = new OAuthHandler(baseUrl);
+const oauthHandler = new OAuthHandler(baseUrl, resource);
 
 app.use(bodyParser.json());
 
 app.get('/', (req, res) => {
   oauthHandler.withOAuthToken(req, res, (accessToken, callFailed, callPassed) => {
-    fetch(`${baseUrl}/konnectors/`, {
+    fetch(`${baseUrl}/${resource}/`, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${accessToken}`,

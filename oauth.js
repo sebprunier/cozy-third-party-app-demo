@@ -6,10 +6,9 @@ const state = '123456';
 
 class OAuthHandler {
 
-  constructor(baseUrl, resource) {
+  constructor(baseUrl, scope) {
     this.baseUrl = baseUrl;
-    this.resource = resource;
-    this.scope = `io.cozy.${resource}`;
+    this.scope = scope;
     this.accessToken = null;
     this.refreshToken = null;
     this.clientConfig = null;

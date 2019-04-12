@@ -7,7 +7,7 @@ const { OAuthHandler } = require('./oauth');
 
 const port = process.env.PORT || 8080;
 const baseUrl = process.env.COZY_BASE_URL || 'https://sebprunier.mycozy.cloud';
-const oauthHandler = new OAuthHandler(baseUrl, `io.cozy.konnectors:GET io.cozy.events:GET io.cozy.files:GET`);
+const oauthHandler = new OAuthHandler(baseUrl, `io.cozy.konnectors:GET io.cozy.bills:GET io.cozy.files:GET`);
 
 const app = express();
 app.use(bodyParser.json());
@@ -44,7 +44,7 @@ function downloadFile(doc, req, res) {
 
 function fetchAllFiles(req, res) {
   return oauthHandler.withOAuthToken(req, res, (accessToken, callFailed, callPassed) => {
-    fetch(`${baseUrl}/data/io.cozy.files/_all_docs?include_docs=true`, {
+    fetch(`${baseUrl}/data/io.cozy.bills/_all_docs?include_docs=true`, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${accessToken}`,
@@ -55,12 +55,45 @@ function fetchAllFiles(req, res) {
       if (r.status == 200) {
         callPassed();
         return r.json().then(json => {
+          console.log(json.rows)
+          const invoiceLink = (doc) => {
+            if (!doc.invoice) {
+              return '-';
+            } else {
+              const invoice = doc.invoice;
+              const invoiceFileId = invoice.split(':')[1];
+              // TODO get mime type from metadata
+              return `<a href="/files/${invoiceFileId}?mime=application/pdf">${doc.filename}</a>`;
+            }
+          }
           const html = `<html>
               <body>
-                <h1>Files</h1>
-                <ul>
-                  ${json.rows.filter(r => r.doc.type === 'file').map(r => `<li><a href="/files/${r.doc._id}?mime=${r.doc.mime}">${r.doc.name}</a></li>`).join('\n')}
-                </ul>
+                <h1>Vos dernières factures</h1>
+                <table border="1">
+                  <thead>
+                    <tr>
+                      <th>Date</th>
+                      <th>Origin</th>
+                      <th>Montant</th>
+                      <th>Devise</th>
+                      <th>Facture</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                  ${
+                    json.rows
+                      .map(r => r.doc)
+                      .filter(doc => doc.date && doc.vendor)
+                      .map(doc => `<tr>
+                        <td>${doc.date}</td>
+                        <td>${doc.vendor}</td>
+                        <td>${doc.amount}</td>
+                        <td>${doc.currency}</td>
+                        <td>${invoiceLink(doc)}</td>
+                      </tr>`).join('\n')
+                  }
+                  </tbody>
+                </table>
               </body>
             </html>`;
           res.type('html').send(html);

@@ -46,7 +46,7 @@ class OAuthHandler {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          "redirect_uris": ["http://127.0.0.1:8080/oauth/callback"],
+          "redirect_uris": [ redirectUri ],
           "client_name": "cozy-third-party-app-demo",
           "software_id": "github.com/sebprunier/cozy-third-party-app-demo"
         })

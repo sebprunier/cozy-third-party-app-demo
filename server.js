@@ -55,7 +55,6 @@ function fetchAllFiles(req, res) {
       if (r.status == 200) {
         callPassed();
         return r.json().then(json => {
-          console.log(json.rows)
           const invoiceLink = (doc) => {
             if (!doc.invoice) {
               return '-';
@@ -73,11 +72,11 @@ function fetchAllFiles(req, res) {
               </head>
               <body>
                 <h1>Vos dernières factures</h1>
-                <table class="table">
+                <table class="table table-hover">
                   <thead>
                     <tr>
                       <th>Date</th>
-                      <th>Origin</th>
+                      <th>Origine</th>
                       <th>Montant</th>
                       <th>Devise</th>
                       <th>Facture</th>
@@ -88,8 +87,12 @@ function fetchAllFiles(req, res) {
                     json.rows
                       .map(r => r.doc)
                       .filter(doc => doc.date && doc.vendor)
+                      .map(doc => {
+                        return {...doc, localeDate: doc.date.split('T')[0]}
+                      })
+                      .sort((d1, d2) => d1.localeDate > d2.localeDate ? -1 : 1)
                       .map(doc => `<tr>
-                        <td>${doc.date}</td>
+                        <td>${doc.localeDate}</td>
                         <td>${doc.vendor}</td>
                         <td>${doc.amount}</td>
                         <td>${doc.currency}</td>

@@ -7,7 +7,7 @@ const { OAuthHandler } = require('./oauth');
 
 const port = process.env.PORT || 8080;
 const baseUrl = process.env.COZY_BASE_URL || 'https://sebprunier.mycozy.cloud';
-const oauthHandler = new OAuthHandler(baseUrl, `io.cozy.konnectors:GET io.cozy.bills:GET io.cozy.files:GET`);
+const oauthHandler = new OAuthHandler(baseUrl, `io.cozy.bills:GET io.cozy.files:GET`);
 
 const app = express();
 app.use(bodyParser.json());
@@ -67,9 +67,13 @@ function fetchAllFiles(req, res) {
             }
           }
           const html = `<html>
+              <head>
+                <title>Vos dernière factures</title>
+                <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css" integrity="sha384-MCw98/SFnGE8fJT3GXwEOngsV7Zt27NXFoaoApmYm81iuXoPkFOJwJ8ERdknLPMO" crossorigin="anonymous">
+              </head>
               <body>
                 <h1>Vos dernières factures</h1>
-                <table border="1">
+                <table class="table">
                   <thead>
                     <tr>
                       <th>Date</th>
@@ -114,42 +118,6 @@ function fetchAllFiles(req, res) {
       }
     }).catch(e => {
       console.log('error while fetchAllFiles', e)
-    });
-  });
-}
-
-function fetchKonnectors(req, res) {
-  return oauthHandler.withOAuthToken(req, res, (accessToken, callFailed, callPassed) => {
-    fetch(`${baseUrl}/konnectors/`, {
-      method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${accessToken}`,
-        'Accept': 'application/json'
-      }
-    })
-    .then(r => {
-      if (r.status == 200) {
-        callPassed();
-        return r.json().then(json => {
-          const html = JSON.stringify(json, null, 2)
-          res.type('html').send(`<pre>${html}</pre>`)
-        });
-      } if (r.status === 401 || r.status === 403) {
-        callFailed();
-        return r.text().then(text => {
-          console.log('failed because', text)
-        });
-      } else {
-        callPassed();
-        return r.text().then(text => {
-          res.type('json').send({
-            status: r.status,
-            text: text
-          })
-        });
-      }
-    }).catch(e => {
-      console.log('error while fetchKonnectors', e)
     });
   });
 }

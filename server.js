@@ -91,7 +91,7 @@ function fetchAllFiles(req, res) {
                         return {...doc, localeDate: doc.date.split('T')[0]}
                       })
                       .sort((d1, d2) => d1.localeDate > d2.localeDate ? -1 : 1)
-                      .map(doc => `<tr>
+                      .map(doc => `<tr class="${doc.amount < 0 ? 'table-success' : ''}">
                         <td>${doc.localeDate}</td>
                         <td>${doc.vendor}</td>
                         <td>${doc.amount}</td>
